@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Recommendation Service — SLO &amp; AI Quality</title>
+<style>
+  :root{
+    --bg:#111217; --panel:#181b1f; --border:#26282e; --text:#ccccdc; --muted:#8e8e9a;
+    --orange:#ff780a; --blue:#5794f2; --green:#73bf69; --red:#f2495c; --yellow:#ffb357;
+    --purple:#b877d9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0}
+  body{
+    background:var(--bg); color:var(--text);
+    font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding-bottom:40px;
+  }
+  .topbar{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:10px 16px; border-bottom:1px solid var(--border); background:#16171b;
+    position:sticky; top:0; z-index:5;
+  }
+  .topbar .crumb{font-size:15px; color:#e6e6eb; font-weight:600}
+  .topbar .crumb .dim{color:var(--muted); font-weight:400}
+  .chip{
+    font-size:12px; color:var(--muted); border:1px solid var(--border);
+    border-radius:3px; padding:3px 8px; background:var(--panel); white-space:nowrap;
+  }
+  .chip b{color:var(--text); font-weight:600}
+  .chip .dot{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green); margin-right:6px; vertical-align:1px}
+  .live{margin-left:auto; font-size:12px; color:var(--muted)}
+  .live .dot{display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--orange); margin-right:5px; animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
+
+  .row-label{
+    margin:18px 16px 8px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+  }
+  .grid{display:grid; gap:10px; padding:0 16px}
+  .r1{grid-template-columns:repeat(4,1fr)}
+  .r2{grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1100px){ .r1{grid-template-columns:repeat(2,1fr)} .r2{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:640px){ .r1,.r2{grid-template-columns:1fr} }
+
+  .panel{
+    background:var(--panel); border:1px solid var(--border); border-radius:4px;
+    padding:10px 12px 12px; min-width:0;
+  }
+  .panel h3{font-size:12.5px; font-weight:600; color:var(--text); margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .panel .sub{font-size:11.5px; color:var(--muted); margin-bottom:6px; min-height:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .panel .value{font-size:26px; font-weight:700; color:#f0f0f4; letter-spacing:.01em}
+  .panel .value small{font-size:13px; font-weight:400; color:var(--muted)}
+  .panel .unit{font-size:11px; color:var(--muted)}
+  .ok{color:var(--green)} .warn{color:var(--yellow)} .bad{color:var(--red)}
+  svg.chart{display:block; width:100%; height:44px; margin-top:6px}
+  svg.chart text{font-size:9px; fill:var(--muted)}
+  .legend{display:flex; gap:12px; font-size:11px; color:var(--muted); margin-top:4px; flex-wrap:wrap}
+  .legend i{display:inline-block; width:9px; height:9px; border-radius:1px; margin-right:5px; vertical-align:-1px}
+
+  .bars{margin-top:8px; display:flex; flex-direction:column; gap:7px}
+  .bar-row{display:grid; grid-template-columns:52px 1fr 40px; align-items:center; gap:8px; font-size:11.5px; color:var(--muted)}
+  .bar{height:9px; background:#22252a; border-radius:2px; overflow:hidden}
+  .bar>span{display:block; height:100%; border-radius:2px; transition:width .6s}
+  .bar-row b{color:var(--text); font-weight:600; text-align:right}
+
+  .gauge-wrap{display:flex; justify-content:space-around; margin-top:4px}
+  .gauge{text-align:center}
+  .gauge svg{width:84px; height:64px}
+  .gauge .gv{font-size:17px; font-weight:700}
+  .gauge .gl{font-size:10.5px; color:var(--muted); margin-top:-2px}
+
+  .statlist{margin-top:10px; display:flex; flex-direction:column; gap:6px; font-size:12.5px}
+  .statlist .li{display:flex; justify-content:space-between; gap:8px}
+  .statlist .li span{color:var(--muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .statlist .li b{font-weight:600; white-space:nowrap}
+
+  footer{
+    margin:22px 16px 0; padding-top:12px; border-top:1px solid var(--border);
+    font-size:12px; color:var(--muted);
+  }
+  footer code{font-size:11px; color:#a0a0b0}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <span class="crumb">AI Recommendation Service <span class="dim">/ SLO &amp; AI Quality</span></span>
+  <span class="chip"><span class="dot"></span><b>prod</b></span>
+  <span class="chip">Last <b>15 m</b></span>
+  <span class="chip">Refresh: <b>5s</b></span>
+  <span class="chip">DS: <b>Prometheus</b></span>
+  <span class="live"><span class="dot"></span>модельные данные</span>
+</header>
+
+<div class="row-label">Golden Signals (Google SRE)</div>
+<main class="grid r1">
+
+  <section class="panel">
+    <h3>Latency p95 / p99 — горячий путь</h3>
+    <div class="sub">histogram_quantile · SLO p95 &lt; 200 ms</div>
+    <div class="value"><span id="p95">148</span> <small>ms</small> <span class="ok" style="font-size:14px">✓</span></div>
+    <div class="unit">p99 <span id="p99v">186</span> ms</div>
+    <svg class="chart" id="ch-latency"></svg>
+    <div class="legend"><span><i style="background:var(--orange)"></i>p95</span><span><i style="background:var(--blue)"></i>p99</span><span><i style="background:var(--red)"></i>SLO 200 ms</span></div>
+  </section>
+
+  <section class="panel">
+    <h3>Traffic — RPS</h3>
+    <div class="sub">sum(rate(http_requests_total)) · из них explain: <span id="llmrps">38</span> req/s</div>
+    <div class="value"><span id="rps">420</span> <small>req/s</small></div>
+    <div class="unit">пик за сутки: 1 240 req/s</div>
+    <svg class="chart" id="ch-traffic"></svg>
+    <div class="legend"><span><i style="background:var(--green)"></i>total</span><span><i style="background:var(--purple)"></i>LLM explain</span></div>
+  </section>
+
+  <section class="panel">
+    <h3>Error Rate (SLI)</h3>
+    <div class="sub">5xx / total · error budget: 1%</div>
+    <div class="value"><span id="err">0.4</span><small>%</small> <span class="ok" style="font-size:14px">✓</span></div>
+    <div class="unit">≈ <span id="err5xx">1.7</span> req/s 5xx</div>
+    <svg class="chart" id="ch-errors"></svg>
+    <div class="legend"><span><i style="background:var(--green)"></i>error rate</span><span><i style="background:var(--red)"></i>порог 1%</span></div>
+  </section>
+
+  <section class="panel">
+    <h3>Saturation</h3>
+    <div class="sub">CPU/RAM подов ai-rec · очередь LLM</div>
+    <div class="bars">
+      <div class="bar-row"><span>CPU</span><div class="bar"><span id="cpu" style="width:62%;background:var(--green)"></span></div><b id="cpuv">62%</b></div>
+      <div class="bar-row"><span>RAM</span><div class="bar"><span id="ram" style="width:71%;background:var(--yellow)"></span></div><b id="ramv">71%</b></div>
+      <div class="bar-row"><span>LLM queue</span><div class="bar"><span id="queue" style="width:6%;background:var(--blue)"></span></div><b id="queuev">3/50</b></div>
+    </div>
+    <div class="unit" style="margin-top:8px">GPU on-prem нет — следим за квотами API</div>
+  </section>
+
+</main>
+
+<div class="row-label">AI-метрики (LLM / RAG / безопасность)</div>
+<main class="grid r2">
+
+  <section class="panel">
+    <h3>Token usage</h3>
+    <div class="sub">llm_tokens_total{prompt|completion}</div>
+    <div class="value">0.8k <small>in ·</small> 0.12k <small>out / req</small></div>
+    <div class="unit"><span id="toks">30.4k</span> in / <span id="toks2">4.6k</span> out tok/s</div>
+    <svg class="chart" id="ch-tokens"></svg>
+    <div class="legend"><span><i style="background:var(--orange)"></i>prompt</span><span><i style="background:var(--blue)"></i>completion</span></div>
+  </section>
+
+  <section class="panel">
+    <h3>Avg Cost per Request</h3>
+    <div class="sub">llm_cost_usd_total / llm_requests_total</div>
+    <div class="value">$<span id="cost">0.0042</span> <span class="ok" style="font-size:14px">✓</span></div>
+    <div class="unit">бюджет $0.01/req · burn 3%/день</div>
+    <svg class="chart" id="ch-cost"></svg>
+    <div class="legend"><span><i style="background:var(--green)"></i>cost/req</span><span><i style="background:var(--yellow)"></i>budget</span></div>
+  </section>
+
+  <section class="panel">
+    <h3>RAG Quality (канарейка)</h3>
+    <div class="sub">Ragas-прогон раз в час → pushgateway</div>
+    <div class="gauge-wrap">
+      <div class="gauge">
+        <svg viewBox="0 0 84 56" id="g-faith"></svg>
+        <div class="gv ok" id="faithv">0.93</div>
+        <div class="gl">Faithfulness ≥ 0.90</div>
+      </div>
+      <div class="gauge">
+        <svg viewBox="0 0 84 56" id="g-ar"></svg>
+        <div class="gv ok" id="arv">0.81</div>
+        <div class="gl">AnswerRelevancy ≥ 0.75</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>Guardrails &amp; Security</h3>
+    <div class="sub">increase(...[1h]) · события Audit Log</div>
+    <div class="statlist">
+      <div class="li"><span>блокировки input</span><b id="g1">12/h</b></div>
+      <div class="li"><span>блокировки output</span><b id="g2">4/h</b></div>
+      <div class="li"><span>PII замаскировано</span><b id="g3">34/h</b></div>
+      <div class="li"><span>попытки injection</span><b id="g4" class="warn">2/h</b></div>
+      <div class="li"><span>DLP-хиты</span><b class="ok">0</b></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>LLM Ops</h3>
+    <div class="sub">здоровье explain-контура (Н7)</div>
+    <div class="statlist">
+      <div class="li"><span>валидный JSON</span><b class="ok" id="o1">99.7%</b></div>
+      <div class="li"><span>explain p95</span><b class="ok" id="o2">1.2 s ≤ 1.5</b></div>
+      <div class="li"><span>cache hit</span><b id="o3">87%</b></div>
+      <div class="li"><span>fallback без объяснения</span><b id="o4" class="warn">3%</b></div>
+      <div class="li"><span>таймауты LLM</span><b id="o5">0.2%</b></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Мокап дашборда (TechnoMart). Цифры модельные, согласованные с таблицей виджетов в
+  <code>TechnoMart_Security_Testing_Observability.md</code> (раздел 3.2). Реальные панели строятся в Grafana
+  по тем же PromQL-запросам поверх kube-prometheus-stack.
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var W=100, H=30;
+
+  // детерминированный генератор, чтобы картинка была стабильной между перезагрузками
+  var seed = 42;
+  function rnd(){ seed = (seed*9301+49297)%233280; return seed/233280; }
+  function series(n, base, amp, drift){
+    var a=[], v=base;
+    for(var i=0;i<n;i++){ v += (rnd()-.5)*amp + drift; a.push(v); }
+    return a;
+  }
+  function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  function path(data, min, max){
+    var pts=[], span=(max-min)||1;
+    for(var i=0;i<data.length;i++){
+      var x = i/(data.length-1)*W;
+      var y = H-2 - (data[i]-min)/span*(H-6);
+      pts.push(x.toFixed(1)+","+(clamp(y,2,H-2)).toFixed(1));
+    }
+    return "M"+pts.join(" L");
+  }
+
+  function draw(elId, cfg){
+    var el = document.getElementById(elId);
+    if(!el) return;
+    var all = cfg.series.reduce(function(acc,s){ return acc.concat(s.data); },[]);
+    if(cfg.threshold!=null) all = all.concat([cfg.threshold]);
+    var min = Math.min.apply(null,all), max = Math.max.apply(null,all);
+    var pad = (max-min)*0.15 || 1; min-=pad; max+=pad;
+    var svg = '<path d="'+path(cfg.series[0].data,min,max)+'" fill="none" stroke="'+cfg.series[0].color+'" stroke-width="1.6"/>';
+    for(var i=1;i<cfg.series.length;i++){
+      svg += '<path d="'+path(cfg.series[i].data,min,max)+'" fill="none" stroke="'+cfg.series[i].color+'" stroke-width="1.2" opacity="0.85"/>';
+    }
+    if(cfg.threshold!=null){
+      var y = clamp(H-2-(cfg.threshold-min)/((max-min)||1)*(H-6), 2, H-2);
+      svg += '<line x1="0" y1="'+y.toFixed(1)+'" x2="'+W+'" y2="'+y.toFixed(1)+'" stroke="'+cfg.thColor+'" stroke-width="1" stroke-dasharray="3,2"/>';
+    }
+    el.setAttribute("viewBox","0 0 "+W+" "+H);
+    el.innerHTML = svg;
+  }
+
+  function gauge(elId, value, th){
+    var el=document.getElementById(elId); if(!el) return;
+    var r=22, cx=42, cy=34, c=2*Math.PI*r, arc=c*0.75; // 3/4 круга
+    var frac=clamp((value)/1.0,0,1)*arc;
+    var color = value>=th ? "var(--green)" : "var(--red)";
+    el.innerHTML =
+      '<path d="M 20 34 A 22 22 0 1 1 64 34" fill="none" stroke="#22252a" stroke-width="7" stroke-linecap="round"/>'+
+      '<path d="M 20 34 A 22 22 0 1 1 64 34" fill="none" stroke="'+color+'" stroke-width="7" stroke-linecap="round" '+
+      'stroke-dasharray="'+frac.toFixed(1)+' '+arc.toFixed(1)+'"/>';
+  }
+
+  // ---- данные (модельные) ----
+  var dP95 = series(40, 150, 22, 0), dP99 = dP95.map(function(v){ return v*1.24; });
+  var dRps = series(40, 420, 90, 0), dLlm = dRps.map(function(v){ return v*0.09; });
+  var dErr = series(40, 0.4, 0.25, 0);
+  var dIn  = series(40, 30, 8, 0), dOut = dIn.map(function(v){ return v*0.15; });
+  var dCost= series(40, 0.0042, 0.0009, 0);
+
+  function renderAll(){
+    draw("ch-latency", {series:[{data:dP95,color:"#ff780a"},{data:dP99,color:"#5794f2"}], threshold:200, thColor:"#f2495c"});
+    draw("ch-traffic", {series:[{data:dRps,color:"#73bf69"},{data:dLlm,color:"#b877d9"}]});
+    draw("ch-errors",  {series:[{data:dErr,color:"#73bf69"}], threshold:1, thColor:"#f2495c"});
+    draw("ch-tokens",  {series:[{data:dIn,color:"#ff780a"},{data:dOut,color:"#5794f2"}]});
+    draw("ch-cost",    {series:[{data:dCost,color:"#73bf69"}], threshold:0.01, thColor:"#ffb357"});
+    gauge("g-faith", 0.93, 0.90);
+    gauge("g-ar", 0.81, 0.75);
+  }
+  renderAll();
+
+  function setText(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+
+  // «живое» обновление: небольшие колебания, как на настоящем дашборде
+  setInterval(function(){
+    try{
+      function tick(arr, amp){ arr.push(clamp(arr[arr.length-1]+(Math.random()-.5)*amp, arr._lo, arr._hi)); arr.shift(); }
+      dP95._lo=120; dP95._hi=195; dP99._lo=150; dP99._hi=210;
+      dRps._lo=330; dRps._hi=560; dLlm._lo=25; dLlm._hi=55;
+      dErr._lo=0.05; dErr._hi=0.95; dIn._lo=22; dIn._hi=40; dCost._lo=0.0028; dCost._hi=0.009;
+      tick(dP95,16); for(var i=0;i<dP95.length;i++) dP99[i]=dP95[i]*1.24;
+      tick(dRps,60); for(i=0;i<dRps.length;i++) dLlm[i]=dRps[i]*0.09;
+      tick(dErr,0.12); tick(dIn,4); for(i=0;i<dIn.length;i++) dOut[i]=dIn[i]*0.15;
+      tick(dCost,0.0005);
+
+      setText("p95", Math.round(dP95[dP95.length-1]));
+      setText("p99v", Math.round(dP99[dP99.length-1]));
+      setText("rps", Math.round(dRps[dRps.length-1]));
+      setText("llmrps", Math.round(dLlm[dLlm.length-1]));
+      setText("err", (clamp(dErr[dErr.length-1],0,1)).toFixed(1));
+      setText("err5xx", (dRps[dRps.length-1]*clamp(dErr[dErr.length-1],0,1)/100).toFixed(1));
+      setText("toks", (dIn[dIn.length-1]).toFixed(1)+"k");
+      setText("toks2", (dOut[dOut.length-1]).toFixed(1)+"k");
+      setText("cost", (dCost[dCost.length-1]).toFixed(4));
+
+      var cpu=clamp(62+(Math.random()-.5)*8,40,85), ram=clamp(71+(Math.random()-.5)*4,55,85);
+      var q=Math.round(clamp(3+(Math.random()-.5)*3,0,12));
+      setText("cpuv",Math.round(cpu)+"%"); document.getElementById("cpu").style.width=cpu+"%";
+      setText("ramv",Math.round(ram)+"%"); document.getElementById("ram").style.width=ram+"%";
+      setText("queuev",q+"/50"); document.getElementById("queue").style.width=(q/50*100)+"%";
+
+      setText("g1", Math.round(clamp(12+(Math.random()-.5)*4,4,20))+"/h");
+      setText("g3", Math.round(clamp(34+(Math.random()-.5)*8,15,55))+"/h");
+
+      renderAll();
+    }catch(e){ /* мокап: тихо игнорируем */ }
+  }, 3000);
+})();
+</script>
+</body>
+</html>

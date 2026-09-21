@@ -6,10 +6,11 @@
 
 ### TechnoMart: сервис персональных рекомендаций для ритейлера
 
-Спроектирован AI-сервис рекомендаций и data-платформа под него: пайплайны, озеро данных, feature store.
+Спроектирован AI-сервис рекомендаций и data-платформа под него: пайплайны, озеро данных, feature store, security layer и observability.
 
 - [02_Model_C4](02_Model_C4/hw02_c4_arch.md) - архитектура сервиса по C4 Model (контейнеры, компоненты, sequence) и OpenAPI-контракт `POST /get_recommendation`
 - [05_Data_Pipelines](05_Data_Pipelines/TechnoMart_Data_Pipelines.md) - data pipeline от источников до feature store, выбор хранилищ
+- [06_Observability](06_Observability/TechnoMart_Security_Testing_Observability.md) - security layer (PII-санитизация, guardrails), RAG-метрики как release gates, observability с AI-метриками на Grafana-дашборде ([мокап](06_Observability/dashboard_mockup.png))
 
 ### Trip Assistant: умный помощник командировок
 
@@ -26,6 +27,7 @@
 | [Мультиагентный ассистент](03_Trip_assistant/README.md) | Дизайн агентов, RAG-пайплайн и рабочий прототип | LangGraph, YandexGPT / MOCK |
 | [Хостинг LLM: SaaS или self-hosted](04_ADR/README.md) | Сравнение вариантов по стоимости, приватности, качеству и сложности поддержки; ADR и pitch для CTO | TCO-анализ, взвешенная матрица |
 | [Data pipeline рекомендаций](05_Data_Pipelines/TechnoMart_Data_Pipelines.md) | Поток данных от источников до feature store, выбор хранилищ, защита от training-serving skew | Kafka, S3 + Iceberg, Flink, Spark, Feast, Redis, Qdrant |
+| [Security, Testing & Observability](06_Observability/TechnoMart_Security_Testing_Observability.md) | Контур качества генеративного сценария: защита от утечек PII и prompt injection, RAG-метрики как гейты релиза, дашборд golden signals + AI-метрики (токены, стоимость запроса) | Presidio, NeMo Guardrails, Ragas, DeepEval, Langfuse, Prometheus + Grafana, Loki, Tempo, Vault |
 
 ## Темы
 
@@ -33,7 +35,8 @@
 - GenAI-паттерны: RAG, мультиагентные системы (Supervisor + Workers)
 - Данные: ELT в озеро (S3 + Iceberg), stream и batch-обработка, feature store
 - Решения: ADR, взвешенные матрицы критериев, расчёт TCO
-- Безопасность: закрытый контур, 152-ФЗ, обезличивание PII
+- Безопасность: закрытый контур, 152-ФЗ, обезличивание PII, guardrails, защита от prompt injection
+- Качество и наблюдаемость: RAG-метрики как release gates (Faithfulness, Answer Relevancy), golden signals и SLO, Grafana-дашборд с AI-метриками
 
 ## Структура репозитория
 
@@ -47,6 +50,10 @@
 ├── 04_ADR/               # Trip Assistant: ADR по хостингу LLM + pitch
 │   ├── adr/adr-000-llm-hosting.md
 │   └── pitch-cto.md
-└── 05_Data_Pipelines/    # TechnoMart: data pipeline и хранилища
+├── 05_Data_Pipelines/    # TechnoMart: data pipeline и хранилища
+└── 06_Observability/     # TechnoMart: security, testing, observability
+    ├── TechnoMart_Security_Testing_Observability.md
+    ├── dashboard_mockup.html
+    └── dashboard_mockup.png
 ```
 
