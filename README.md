@@ -19,6 +19,12 @@
 - [03_Trip_assistant](03_Trip_assistant/README.md) - мультиагентная система (Supervisor + Workers), RAG-пайплайн, прототип на LangGraph
 - [04_ADR](04_ADR/README.md) - анализ и решение по хостингу LLM: облачная модель по API или self-hosted, [pitch для CTO](04_ADR/pitch-cto.md)
 
+### Sizing: прод-контур Llama-3-70B под 1000 RPM
+
+Расчёт железа и стоимости инференса Llama-3-70B: VRAM (веса + KV-кэш), выбор GPU, сравнение Yandex Cloud и Cloud.ru, эффект батчинга и vLLM.
+
+- [07_Price_Resource_Sizing](07_Price_Resource_Sizing/README.md) - sizing и стоимость прод-контура Llama-3-70B: FP16 140 ГБ / INT4 35 ГБ, рекомендация 5×A100-80 с vLLM + AWQ INT4, ~1,2–1,7 млн ₽/мес ([Excel-модель](07_Price_Resource_Sizing/Sizing_Llama3-70B.xlsx) с живыми формулами)
+
 ## Проекты
 
 | Проект | О чём | Стек |
@@ -28,6 +34,7 @@
 | [Хостинг LLM: SaaS или self-hosted](04_ADR/README.md) | Сравнение вариантов по стоимости, приватности, качеству и сложности поддержки; ADR и pitch для CTO | TCO-анализ, взвешенная матрица |
 | [Data pipeline рекомендаций](05_Data_Pipelines/TechnoMart_Data_Pipelines.md) | Поток данных от источников до feature store, выбор хранилищ, защита от training-serving skew | Kafka, S3 + Iceberg, Flink, Spark, Feast, Redis, Qdrant |
 | [Security, Testing & Observability](06_Observability/TechnoMart_Security_Testing_Observability.md) | Контур качества генеративного сценария: защита от утечек PII и prompt injection, RAG-метрики как гейты релиза, дашборд golden signals + AI-метрики (токены, стоимость запроса) | Presidio, NeMo Guardrails, Ragas, DeepEval, Langfuse, Prometheus + Grafana, Loki, Tempo, Vault |
+| [Sizing прод-контура Llama-3-70B](07_Price_Resource_Sizing/README.md) | VRAM и GPU под 1000 RPM (веса + KV-кэш, roofline-модель), цены Yandex Cloud vs Cloud.ru, экономия от батчинга и vLLM, рекомендация прод-конфигурации | Roofline-модель, vLLM, AWQ INT4, Excel/Google Sheets |
 
 ## Темы
 
@@ -35,6 +42,7 @@
 - GenAI-паттерны: RAG, мультиагентные системы (Supervisor + Workers)
 - Данные: ELT в озеро (S3 + Iceberg), stream и batch-обработка, feature store
 - Решения: ADR, взвешенные матрицы критериев, расчёт TCO
+- Sizing: расчёт VRAM (веса + KV-кэш), roofline-модель пропускной способности, эффект батчинга и vLLM, сравнение стоимости GPU в облаках
 - Безопасность: закрытый контур, 152-ФЗ, обезличивание PII, guardrails, защита от prompt injection
 - Качество и наблюдаемость: RAG-метрики как release gates (Faithfulness, Answer Relevancy), golden signals и SLO, Grafana-дашборд с AI-метриками
 
@@ -51,9 +59,12 @@
 │   ├── adr/adr-000-llm-hosting.md
 │   └── pitch-cto.md
 ├── 05_Data_Pipelines/    # TechnoMart: data pipeline и хранилища
-└── 06_Observability/     # TechnoMart: security, testing, observability
-    ├── TechnoMart_Security_Testing_Observability.md
-    ├── dashboard_mockup.html
-    └── dashboard_mockup.png
+├── 06_Observability/     # TechnoMart: security, testing, observability
+│   ├── TechnoMart_Security_Testing_Observability.md
+│   ├── dashboard_mockup.html
+│   └── dashboard_mockup.png
+└── 07_Price_Resource_Sizing/  # Sizing: VRAM, GPU и стоимость Llama-3-70B
+    ├── README.md
+    └── Sizing_Llama3-70B.xlsx
 ```
 
