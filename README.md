@@ -6,11 +6,12 @@
 
 ### TechnoMart: сервис персональных рекомендаций для ритейлера
 
-Спроектирован AI-сервис рекомендаций и data-платформа под него: пайплайны, озеро данных, feature store, security layer и observability.
+Спроектирован AI-сервис рекомендаций и data-платформа под него: стратегия внедрения, пайплайны, озеро данных, feature store, security layer, observability и поставка (CI/CD, MLOps).
 
-- [02_Model_C4](02_Model_C4/hw02_c4_arch.md) - архитектура сервиса по C4 Model (контейнеры, компоненты, sequence) и OpenAPI-контракт `POST /get_recommendation`
-- [05_Data_Pipelines](05_Data_Pipelines/TechnoMart_Data_Pipelines.md) - data pipeline от источников до feature store, выбор хранилищ
-- [06_Observability](06_Observability/TechnoMart_Security_Testing_Observability.md) - security layer (PII-санитизация, guardrails), RAG-метрики как release gates, observability с AI-метриками на Grafana-дашборде ([мокап](06_Observability/dashboard_mockup.png))
+- [01_Roadmap_AI_Strategy](01_Roadmap_AI_Strategy/README.md) - уточняющие вопросы заказчику, выбор контрактной модели (T&M с капом на PoC, гибрид Fixed Price + T&M для MVP), матрица AI-рисков, roadmap PoC >> MVP >> Production с DoD
+- [02_Model_C4](02_Model_C4/README.md) - архитектура сервиса по C4 Model (контейнеры, компоненты, sequence) и OpenAPI-контракт `POST /get_recommendation`
+- [05_Data_Pipelines](05_Data_Pipelines/README.md) - data pipeline от источников до feature store, выбор хранилищ
+- [06_Observability](06_Observability/README.md) - security layer (PII-санитизация, guardrails), RAG-метрики как release gates, observability с AI-метриками на Grafana-дашборде ([мокап](06_Observability/dashboard_mockup.png))
 - [08_CICD_MLOps_Production](08_CICD_MLOps_Production/README.md) - поставка AI-сервиса: IaC (Terraform), CI/CD (GitHub Actions + Argo CD), MLOps-конвейер обучения (Airflow + MLflow), canary-релизы с авто-откатом
 
 ### Trip Assistant: умный помощник командировок
@@ -30,17 +31,19 @@
 
 | Проект | О чём | Стек |
 |---|---|---|
-| [C4-архитектура AI-сервиса](02_Model_C4/hw02_c4_arch.md) | Контейнеры, компоненты и ключевой сценарий рекомендательного сервиса, контракт интеграции | C4 Model, Mermaid, OpenAPI |
+| [Стратегия, риски и roadmap AI-внедрения](01_Roadmap_AI_Strategy/README.md) | Уточняющие вопросы заказчику, обоснование контрактной модели (T&M с капом vs гибрид с Fixed Price), матрица AI-специфичных рисков с митигациями, дорожная карта PoC >> MVP >> Production с DoD | Матрица рисков, T&M / Fixed Price, DoD |
+| [C4-архитектура AI-сервиса](02_Model_C4/README.md) | Контейнеры, компоненты и ключевой сценарий рекомендательного сервиса, контракт интеграции | C4 Model, Mermaid, OpenAPI |
 | [Мультиагентный ассистент](03_Trip_assistant/README.md) | Дизайн агентов, RAG-пайплайн и рабочий прототип | LangGraph, YandexGPT / MOCK |
 | [Хостинг LLM: SaaS или self-hosted](04_ADR/README.md) | Сравнение вариантов по стоимости, приватности, качеству и сложности поддержки; ADR и pitch для CTO | TCO-анализ, взвешенная матрица |
-| [Data pipeline рекомендаций](05_Data_Pipelines/TechnoMart_Data_Pipelines.md) | Поток данных от источников до feature store, выбор хранилищ, защита от training-serving skew | Kafka, S3 + Iceberg, Flink, Spark, Feast, Redis, Qdrant |
-| [Security, Testing & Observability](06_Observability/TechnoMart_Security_Testing_Observability.md) | Контур качества генеративного сценария: защита от утечек PII и prompt injection, RAG-метрики как гейты релиза, дашборд golden signals + AI-метрики (токены, стоимость запроса) | Presidio, NeMo Guardrails, Ragas, DeepEval, Langfuse, Prometheus + Grafana, Loki, Tempo, Vault |
+| [Data pipeline рекомендаций](05_Data_Pipelines/README.md) | Поток данных от источников до feature store, выбор хранилищ, защита от training-serving skew | Kafka, S3 + Iceberg, Flink, Spark, Feast, Redis, Qdrant |
+| [Security, Testing & Observability](06_Observability/README.md) | Контур качества генеративного сценария: защита от утечек PII и prompt injection, RAG-метрики как гейты релиза, дашборд golden signals + AI-метрики (токены, стоимость запроса) | Presidio, NeMo Guardrails, Ragas, DeepEval, Langfuse, Prometheus + Grafana, Loki, Tempo, Vault |
 | [Sizing прод-контура Llama-3-70B](07_Price_Resource_Sizing/README.md) | VRAM и GPU под 1000 RPM (веса + KV-кэш, roofline-модель), цены Yandex Cloud vs Cloud.ru, экономия от батчинга и vLLM, рекомендация прод-конфигурации | Roofline-модель, vLLM, AWQ INT4, Excel/Google Sheets |
 | [IaC, CI/CD и MLOps-конвейеры](08_CICD_MLOps_Production/README.md) | Два независимых релизных цикла (код и модель), интеграция артефактов через release-PR (image + modelVersion), canary-релиз с авто-анализом и авто-откатом, 0–1 ручных шагов | Terraform, GitHub Actions, Argo CD/Rollouts, Airflow, MLflow |
 
 ## Темы
 
 - Архитектура: C4 Model, sequence-диаграммы, OpenAPI-контракты
+- Стратегия: уточняющие вопросы заказчику, контрактные модели (T&M с капом, гибрид Fixed Price + T&M), матрица AI-рисков, roadmap с DoD по стадиям PoC >> MVP >> Production
 - GenAI-паттерны: RAG, мультиагентные системы (Supervisor + Workers)
 - Данные: ELT в озеро (S3 + Iceberg), stream и batch-обработка, feature store
 - Решения: ADR, взвешенные матрицы критериев, расчёт TCO
@@ -53,6 +56,8 @@
 
 ```text
 .
+├── 01_Roadmap_AI_Strategy/    # TechnoMart: стратегия внедрения, риски, roadmap
+│   └── README.md
 ├── 02_Model_C4/          # TechnoMart: C4-архитектура + OpenAPI
 │   └── README.md
 ├── 03_Trip_assistant/    # Trip Assistant: агенты + RAG + прототип
